@@ -383,22 +383,13 @@ void RendererAPI_D3D11::CopyTexture3DData_RenderThread(void* textureHandle)
 		return;
 	}
 
-	// TODO: update for 3D
-	// copy line by line to managed memory
-	// for (unsigned int row = 0; row < desc.Height; ++row)
-	// {
-	// 	char* dest = ((char*)cpuResource->cpuBuffer) + row * desc.Width * pixelSize;
-	// 	char* src = ((char*)resource.pData) + row * resource.RowPitch;
-	// 	memcpy(dest, src, desc.Width * pixelSize);
-	// }
-
-	for (unsigned int row = 0; row < desc.Height; ++row)
-	{
-//		for (unsigned int depth = 0; row < desc.Depth; ++depth) {
-			char* dest = ((char*)cpuResource->cpuBuffer) + row * desc.Depth * desc.Width * pixelSize;
-			char* src = ((char*)resource.pData) + row * resource.DepthPitch * resource.RowPitch;
-			memcpy(dest, src, desc.Width * desc.Depth * pixelSize);
-//		}
+	for (unsigned int depth = 0; depth < desc.Depth; ++depth) {
+		for (unsigned int row = 0; row < desc.Height; ++row)
+		{
+			char* dest = ((char*)cpuResource->cpuBuffer) + row * depth * desc.Width * pixelSize;
+			char* src = ((char*)resource.pData) + row * depth * resource.RowPitch;
+			memcpy(dest, src, desc.Width * pixelSize);
+		}
 	}
 
 	_context->Unmap(cpuTexture, 0);
