@@ -61,6 +61,11 @@ public:
 	virtual void CopyTextureData_RenderThread(void* textureHandle) = 0;
     virtual Status RetrieveTextureData_MainThread(void* textureHandle, void* data, int dataSize) = 0;
 
+	virtual Status RequestTexture3DData_MainThread(void* textureHandle) = 0;
+    virtual Status RequestTexture3DData_RenderThread(void* textureHandle) = 0;
+	virtual void CopyTexture3DData_RenderThread(void* textureHandle) = 0;
+    virtual Status RetrieveTexture3DData_MainThread(void* textureHandle, void* data, int dataSize) = 0;
+
 	virtual Status RequestBufferData_MainThread(void* bufferHandle) = 0;
 	virtual Status RequestBufferData_RenderThread(void* bufferHandle) = 0;
 	virtual void CopyBufferData_RenderThread(void* textureHandle) = 0;

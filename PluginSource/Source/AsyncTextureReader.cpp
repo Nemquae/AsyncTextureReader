@@ -143,6 +143,28 @@ extern "C" UnityRenderingEvent UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API GetReq
 }
 
 //-------------------------------------------------------------------------------------------------
+// OnRequestTextureEvent
+//-------------------------------------------------------------------------------------------------
+static void UNITY_INTERFACE_API OnRequestTexture3DEvent(int eventID)
+{
+	if (sCurrentAPI != NULL && eventID >= 0 && eventID < sResourcesSize && sResources[eventID] != NULL)
+	{
+		sCurrentAPI->RequestTexture3DData_RenderThread(sResources[eventID]);
+		// free resource slot for future use
+		sResources[eventID] = NULL;
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+// GetRequestTextureEventFunc
+//-------------------------------------------------------------------------------------------------
+extern "C" UnityRenderingEvent UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API GetRequestTexture3DEventFunc()
+{
+	return OnRequestTexture3DEvent;
+}
+
+
+//-------------------------------------------------------------------------------------------------
 // OnRequestBufferEvent
 //-------------------------------------------------------------------------------------------------
 static void UNITY_INTERFACE_API OnRequestBufferEvent(int eventID)
@@ -197,6 +219,39 @@ extern "C" int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API RequestTextureData(voi
 }
 
 //-------------------------------------------------------------------------------------------------
+// RequestTextureData
+//-------------------------------------------------------------------------------------------------
+extern "C" int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API RequestTexture3DData(void* textureHandle)
+{
+	if (textureHandle == NULL)
+	{
+		sLastStatus = Status::Error_InvalidArguments;
+		return -1;
+	}
+
+	// store resource handle
+	int resourceSlot = FindFreeResourceSlot();
+	if (resourceSlot == -1)
+	{
+		sLastStatus = Status::Error_TooManyRequests;
+		return -1;
+	}
+
+	sResources[resourceSlot] = textureHandle;
+
+	if (sCurrentAPI != NULL)
+	{
+		sLastStatus = sCurrentAPI->RequestTexture3DData_MainThread(textureHandle);
+		return resourceSlot;
+	}
+	else
+	{
+		sLastStatus = Status::Error_UnsupportedAPI;
+		return -1;
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
 // OnCopyTextureEvent
 //-------------------------------------------------------------------------------------------------
 static void UNITY_INTERFACE_API OnCopyTextureEvent(int eventID)
@@ -210,11 +265,32 @@ static void UNITY_INTERFACE_API OnCopyTextureEvent(int eventID)
 }
 
 //-------------------------------------------------------------------------------------------------
+// OnCopyTextureEvent
+//-------------------------------------------------------------------------------------------------
+static void UNITY_INTERFACE_API OnCopyTexture3DEvent(int eventID)
+{
+	if (sCurrentAPI != NULL && eventID >= 0 && eventID < sResourcesSize && sResources[eventID] != NULL)
+	{
+		sCurrentAPI->CopyTexture3DData_RenderThread(sResources[eventID]);
+		// free resource slot for future use
+		sResources[eventID] = NULL;
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
 // GetCopyTextureEventFunc
 //-------------------------------------------------------------------------------------------------
 extern "C" UnityRenderingEvent UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API GetCopyTextureEventFunc()
 {
 	return OnCopyTextureEvent;
+}
+
+//-------------------------------------------------------------------------------------------------
+// GetCopyTextureEventFunc
+//-------------------------------------------------------------------------------------------------
+extern "C" UnityRenderingEvent UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API GetCopyTexture3DEventFunc()
+{
+	return OnCopyTexture3DEvent;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -250,6 +326,41 @@ extern "C" int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API RetrieveTextureData(vo
 		return -1;
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
+// RetrieveTexture3DData
+//-------------------------------------------------------------------------------------------------
+extern "C" int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API RetrieveTexture3DData(void* textureHandle, void* data, int dataSize)
+{
+	// parameters were tested on C# side and can't be invalid
+	assert(data != NULL && dataSize >= 0);
+
+	if (textureHandle == NULL)
+	{
+		sLastStatus = Status::Error_InvalidArguments;
+		return -1;
+	}
+
+	if (sCurrentAPI != NULL)
+	{
+		sLastStatus = sCurrentAPI->RetrieveTexture3DData_MainThread(textureHandle, data, dataSize);
+		if (sLastStatus == Status::NotReady)
+		{
+			int slot = FindFreeResourceSlot();
+			// save texture for issue plugin event call
+			sResources[slot] = textureHandle;
+			return slot;
+		}
+
+		return -1;
+	}
+	else
+	{
+		sLastStatus = Status::Error_UnsupportedAPI;
+		return -1;
+	}
+}
+
 
 //-------------------------------------------------------------------------------------------------
 // RequestBufferData

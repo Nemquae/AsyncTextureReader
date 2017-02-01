@@ -256,6 +256,187 @@ Status RendererAPI_D3D11::RetrieveTextureData_MainThread(void* textureHandle, vo
 }
 
 //-------------------------------------------------------------------------------------------------
+// RendererAPI_D3D11::RequestTextureData_MainThread()
+//-------------------------------------------------------------------------------------------------
+Status RendererAPI_D3D11::RequestTexture3DData_MainThread(void* textureHandle)
+{
+	// executed on main thread 
+	// prepare for render thread request that will come later
+	ID3D11Texture3D* texture = (ID3D11Texture3D*)textureHandle;
+
+	CpuResource* cpuResource = _resourceMap[texture];
+	if (cpuResource == NULL)
+	{
+		cpuResource = new CpuResource();
+
+		// not thread safe!
+		_resourceMap[texture] = cpuResource;
+	}
+
+	cpuResource->lastStatus = Status::NotReady;
+	cpuResource->bufferStatus = CpuResourceStatus::WaitingForGpu;
+
+	return Status::Succeeded;
+}
+
+//-------------------------------------------------------------------------------------------------
+// RendererAPI_D3D11::RequestTextureData_RenderThread()
+//-------------------------------------------------------------------------------------------------
+Status RendererAPI_D3D11::RequestTexture3DData_RenderThread(void* textureHandle)
+{
+	ID3D11Texture3D* texture = (ID3D11Texture3D*)textureHandle;
+
+	CpuResource* cpuResource = _resourceMap[texture];
+	if (cpuResource->stagingBuffer == NULL)
+	{		
+		// create cpu texture
+		Status status = CreateStagingTexture3D(texture, cpuResource);
+		if (status != Status::Succeeded)
+			return status;
+	}
+
+	// not sure about this
+	// copy is already in progress
+	//if (cpuResource->bufferStatus != CpuResourceStatus::Ready)
+		//return Status::Error_CopyInProgress;
+
+	// request texture copy to cpu memory
+	cpuResource->bufferStatus = CpuResourceStatus::WaitingForGpu;
+	cpuResource->lastStatus = Status::NotReady;
+	_context->CopyResource(cpuResource->stagingBuffer, texture);
+
+    return Status::Succeeded;
+}
+
+//-------------------------------------------------------------------------------------------------
+// RendererAPI_D3D11::CreateStagingTexture()
+//-------------------------------------------------------------------------------------------------
+Status RendererAPI_D3D11::CreateStagingTexture3D(ID3D11Texture3D* gpuTexture, CpuResource* cpuResource)
+{
+	D3D11_TEXTURE3D_DESC desc;
+	gpuTexture->GetDesc(&desc);
+
+	// is format supported?
+	int pixelSize = GetPixelSize(desc.Format);
+	if (pixelSize == -1)
+		return Status::Error_UnsupportedFormat;
+
+	int size = desc.Width * desc.Depth * desc.Height * pixelSize;
+	
+	desc.Usage = D3D11_USAGE_STAGING;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	desc.BindFlags = 0;
+	desc.MiscFlags = 0;
+
+	ID3D11Texture3D* cpuTexture = NULL;
+	if (FAILED(_device->CreateTexture3D(&desc, NULL, &cpuTexture)))
+	{	
+		return Status::Error_UnknownError;
+	}
+
+	cpuResource->stagingBuffer = cpuTexture;
+	cpuResource->bufferSize = size;
+	cpuResource->cpuBuffer = new byte[size];
+	
+	return Status::Succeeded;
+}
+
+//-------------------------------------------------------------------------------------------------
+// RendererAPI_D3D11::CopyTextureData_RenderThread()
+//-------------------------------------------------------------------------------------------------
+void RendererAPI_D3D11::CopyTexture3DData_RenderThread(void* textureHandle)
+{
+	ID3D11Texture3D* gpuTexture = (ID3D11Texture3D*)textureHandle;
+	CpuResource* cpuResource = _resourceMap[gpuTexture];
+
+	if (cpuResource == NULL)
+		return;
+
+	if (cpuResource->bufferStatus != CpuResourceStatus::WaitingForGpu)
+		return;
+
+	ID3D11Texture3D* cpuTexture = (ID3D11Texture3D*)cpuResource->stagingBuffer;
+	
+	D3D11_TEXTURE3D_DESC desc;
+	cpuTexture->GetDesc(&desc);
+
+	int pixelSize = GetPixelSize(desc.Format);
+	if (pixelSize == -1)
+	{
+		cpuResource->lastStatus = Status::Error_UnsupportedFormat;
+		return;
+	}
+	
+	// try to map resource
+	D3D11_MAPPED_SUBRESOURCE resource;
+	HRESULT result = _context->Map(cpuTexture, 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &resource);
+	// resource is not ready, return
+	if (result == DXGI_ERROR_WAS_STILL_DRAWING)
+	{
+		cpuResource->lastStatus = Status::NotReady;
+		return;
+	}
+	// something went wrong
+	if (FAILED(result))
+	{
+		cpuResource->lastStatus = Status::Error_UnknownError;
+		return;
+	}
+
+	// TODO: update for 3D
+	// copy line by line to managed memory
+	// for (unsigned int row = 0; row < desc.Height; ++row)
+	// {
+	// 	char* dest = ((char*)cpuResource->cpuBuffer) + row * desc.Width * pixelSize;
+	// 	char* src = ((char*)resource.pData) + row * resource.RowPitch;
+	// 	memcpy(dest, src, desc.Width * pixelSize);
+	// }
+
+	for (unsigned int row = 0; row < desc.Height; ++row)
+	{
+//		for (unsigned int depth = 0; row < desc.Depth; ++depth) {
+			char* dest = ((char*)cpuResource->cpuBuffer) + row * desc.Depth * desc.Width * pixelSize;
+			char* src = ((char*)resource.pData) + row * resource.DepthPitch * resource.RowPitch;
+			memcpy(dest, src, desc.Width * desc.Depth * pixelSize);
+//		}
+	}
+
+	_context->Unmap(cpuTexture, 0);
+
+	cpuResource->bufferStatus = CpuResourceStatus::CopyFinished;
+	cpuResource->lastStatus = Status::Succeeded;
+}
+
+//-------------------------------------------------------------------------------------------------
+// RendererAPI_D3D11::RetrieveTextureData_MainThread()
+//-------------------------------------------------------------------------------------------------
+Status RendererAPI_D3D11::RetrieveTexture3DData_MainThread(void* textureHandle, void* data, int dataSize)
+{
+	ID3D11Texture3D* gpuTexture = (ID3D11Texture3D*)textureHandle;
+	CpuResource* cpuResource = _resourceMap[gpuTexture];
+	
+	// texture data wasn't requested, there's nothing to retrieve
+	if (cpuResource == NULL)
+		return Status::Error_NoRequest;
+	if (cpuResource->bufferStatus == CpuResourceStatus::Ready)
+		return Status::Error_NoRequest;
+
+	if (cpuResource->bufferStatus == CpuResourceStatus::WaitingForGpu)
+		return cpuResource->lastStatus;
+
+	assert(cpuResource->bufferStatus == CpuResourceStatus::CopyFinished);
+
+	if (cpuResource->bufferSize > dataSize)
+		return Status::Error_WrongBufferSize;
+
+	// copy to managed mem
+	memcpy(data, cpuResource->cpuBuffer, cpuResource->bufferSize);
+
+	cpuResource->bufferStatus = CpuResourceStatus::Ready;
+	return Status::Succeeded;	
+}
+
+//-------------------------------------------------------------------------------------------------
 // RendererAPI_D3D11::GetPixelSize()
 //-------------------------------------------------------------------------------------------------
 int RendererAPI_D3D11::GetPixelSize(DXGI_FORMAT format)
