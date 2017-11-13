@@ -74,6 +74,11 @@ public:
 	virtual void CopyTextureData_RenderThread(void* textureHandle);
     virtual Status RetrieveTextureData_MainThread(void* textureHandle, void* data, int dataSize);
 
+	virtual Status RequestTexture3DData_MainThread(void* textureHandle);
+    virtual Status RequestTexture3DData_RenderThread(void* textureHandle);
+	virtual void CopyTexture3DData_RenderThread(void* textureHandle);
+    virtual Status RetrieveTexture3DData_MainThread(void* textureHandle, void* data, int dataSize);
+
 	virtual Status RequestBufferData_MainThread(void* bufferHandle);
 	virtual Status RequestBufferData_RenderThread(void* bufferHandle);
 	virtual void CopyBufferData_RenderThread(void* textureHandle);
@@ -84,6 +89,7 @@ public:
 private:
 	void ReleaseResources();
 	Status CreateStagingTexture(ID3D11Texture2D* gpuTexture, CpuResource* cpuResource);
+	Status CreateStagingTexture3D(ID3D11Texture3D* gpuTexture, CpuResource* cpuResource);
 	Status CreateStagingBuffer(ID3D11Buffer* gpuTexture, CpuResource* cpuResource);
 	int GetPixelSize(DXGI_FORMAT format);
 

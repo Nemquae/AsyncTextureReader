@@ -247,6 +247,134 @@ public class AsyncTextureReader
         return status;
     }
 
+// START 3D:
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="texture"></param>
+    /// <returns></returns>
+    public static Status RequestTexture3DData(Texture3D texture)
+    {
+        Status status = Status.Succeeded;
+        if (texture == null)
+        {
+            status = Status.Error_InvalidArguments;
+        }
+        else
+        {
+            int requestSlot = RequestTexture3DData(GetTexture3DPtr(texture));
+            if (requestSlot == -1)
+                status = (Status)GetLastStatus();
+            else
+                GL.IssuePluginEvent(GetRequestTexture3DEventFunc(), requestSlot);
+        }
+
+#if UNITY_EDITOR // check for errors in editor
+        if(Failed(status))
+            Debug.LogError("RequestTexture3DData failed: " + status);
+#endif // UNITY_EDITOR
+        return status;
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="texture"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static Status RetrieveTexture3DData(Texture3D texture, int[] data)
+    {
+        Status status;
+        if (texture == null || data == null)
+            status = Status.Error_InvalidArguments;
+        else
+        {
+            int slot = RetrieveTexture3DData(GetTexture3DPtr(texture), data, data.Length * sizeof(int));
+            if (slot != -1)
+            {
+                status = Status.NotReady;
+                GL.IssuePluginEvent(GetCopyTexture3DEventFunc(), slot);
+            }
+            else
+            {
+                status = (Status)GetLastStatus();
+            }
+        }
+
+#if UNITY_EDITOR // check for errors in editor
+        if (Failed(status))
+            Debug.LogError("RetrieveTexture3DData failed: " + status);
+#endif // UNITY_EDITOR
+        return status;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="texture"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static Status RetrieveTexture3DData(Texture3D texture, float[] data)
+    {
+        Status status;
+        if (texture == null || data == null)
+            status = Status.Error_InvalidArguments;
+        else
+        {
+            int slot = RetrieveTexture3DData(GetTexture3DPtr(texture), data, data.Length * sizeof(float));
+            if (slot != -1)
+            {
+                status = Status.NotReady;
+                GL.IssuePluginEvent(GetCopyTexture3DEventFunc(), slot);
+            }
+            else
+            {
+                status = (Status)GetLastStatus();
+            }
+        }
+
+#if UNITY_EDITOR // check for errors in editor
+        if (Failed(status))
+            Debug.LogError("RetrieveTexture3DData failed: " + status);
+#endif // UNITY_EDITOR
+        return status;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="texture"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static Status RetrieveTexture3DData(Texture3D texture, byte[] data)
+    {
+        Status status;
+        if (texture == null || data == null)
+            status = Status.Error_InvalidArguments;
+        else
+        {
+            int slot = RetrieveTexture3DData(GetTexture3DPtr(texture), data, data.Length * sizeof(byte));
+            if(slot != -1)
+            {
+                status = Status.NotReady;
+                GL.IssuePluginEvent(GetCopyTexture3DEventFunc(), slot);
+            }
+            else
+            {
+                status = (Status)GetLastStatus();
+            }
+        }
+
+#if UNITY_EDITOR // check for errors in editor
+        if (Failed(status))
+            Debug.LogError("RetrieveTexture3DData failed: " + status);
+#endif // UNITY_EDITOR
+        return status;
+    }
+
+//
+
 #if UNITY_5_5_OR_NEWER
     /// <summary>
     /// 
@@ -440,6 +568,18 @@ public class AsyncTextureReader
         return ptr;
     }
 
+    private static IntPtr GetTexture3DPtr(Texture3D texture)
+    {
+        IntPtr ptr;
+        if (_texture3DHandles.TryGetValue(texture, out ptr))
+            return ptr;
+
+        ptr = texture.GetNativeTexturePtr();
+        _texture3DHandles.Add(texture, ptr);
+        return ptr;
+    }    
+
+    private static Dictionary<Texture3D, IntPtr> _texture3DHandles = new Dictionary<Texture3D, IntPtr>();
     private static Dictionary<Texture, IntPtr> _textureHandles = new Dictionary<Texture, IntPtr>();
     private static Dictionary<ComputeBuffer, IntPtr> _bufferHandles = new Dictionary<ComputeBuffer, IntPtr>();
 
@@ -456,6 +596,15 @@ public class AsyncTextureReader
     private static extern int RetrieveTextureData(IntPtr textureHandle, byte[] data, int dataSize);
 
     [DllImport("AsyncTextureReader")]
+    private static extern int RequestTexture3DData(IntPtr textureHandle);
+    [DllImport("AsyncTextureReader")]
+    private static extern int RetrieveTexture3DData(IntPtr textureHandle, int[] data, int dataSize);
+    [DllImport("AsyncTextureReader")]
+    private static extern int RetrieveTexture3DData(IntPtr textureHandle, float[] data, int dataSize);
+    [DllImport("AsyncTextureReader")]
+    private static extern int RetrieveTexture3DData(IntPtr textureHandle, byte[] data, int dataSize);
+
+    [DllImport("AsyncTextureReader")]
     private static extern int RequestBufferData(IntPtr textureHandle);
     [DllImport("AsyncTextureReader")]
     private static extern int RetrieveBufferData(IntPtr bufferHandle, int[] data, int dataSize);
@@ -469,9 +618,13 @@ public class AsyncTextureReader
     [DllImport("AsyncTextureReader")]
     private static extern IntPtr GetRequestTextureEventFunc();
     [DllImport("AsyncTextureReader")]
+    private static extern IntPtr GetRequestTexture3DEventFunc();
+    [DllImport("AsyncTextureReader")]
     private static extern IntPtr GetRequestBufferEventFunc();
     [DllImport("AsyncTextureReader")]
     private static extern IntPtr GetCopyTextureEventFunc();
+    [DllImport("AsyncTextureReader")]
+    private static extern IntPtr GetCopyTexture3DEventFunc();
     [DllImport("AsyncTextureReader")]
     private static extern IntPtr GetCopyBufferEventFunc();
 
