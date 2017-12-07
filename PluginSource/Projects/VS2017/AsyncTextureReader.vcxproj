@@ -162,7 +162,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-</Project>
+  <ItemDefinitionGroup>
+<PostBuildEvent>
+<Command>
   set TARGET_PLUGIN_PATH=$(SolutionDir)..\..\..\UnityProject\AsyncTextureReader\Assets\Plugins\x86_64
 )
 echo Target Plugin Path is %TARGET_PLUGIN_PATH%

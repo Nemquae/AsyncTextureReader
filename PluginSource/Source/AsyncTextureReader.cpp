@@ -97,7 +97,7 @@ static void UNITY_INTERFACE_API OnGraphicsDeviceEvent(UnityGfxDeviceEventType ev
     }
 
     if (eventType == kUnityGfxDeviceEventShutdown)
-    {        
+    {
         SAFE_DELETE(sCurrentAPI);
         sDeviceType = kUnityGfxRendererNull;
     }
@@ -434,7 +434,7 @@ extern "C" int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API RequestBufferData(void
 		sLastStatus = Status::Error_TooManyRequests;
 		return -1;
 	}
-	
+
 	sResources[resourceSlot] = bufferHandle;
 
 	if (sCurrentAPI != NULL)
