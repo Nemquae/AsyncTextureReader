@@ -1,0 +1,9 @@
+﻿C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\AsyncTextureReader.vcxproj(249,3): warning MSB4011: "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.Cpp.targets" cannot be imported again. It was already imported at "C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\AsyncTextureReader.vcxproj (162,3)". This is most likely a build authoring error. This subsequent import will be ignored. 
+  RendererAPI_D3D11.cpp
+  RendererAPI.cpp
+  AsyncTextureReader.cpp
+  Generating Code...
+     Creating library C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\Debug\AsyncTextureReader.lib and object C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\Debug\AsyncTextureReader.exp
+  AsyncTextureReader.vcxproj -> C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\Debug\AsyncTextureReader.dll
+  Target Plugin Path is C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\..\..\..\UnityProject\AsyncTextureReader\Assets\Plugins\x86_64
+          1 file(s) copied.
