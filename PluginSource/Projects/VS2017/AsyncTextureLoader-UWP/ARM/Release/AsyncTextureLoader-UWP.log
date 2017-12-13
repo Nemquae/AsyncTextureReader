@@ -1,0 +1,8 @@
+﻿  pch.cpp
+  AsyncTextureReader.cpp
+  RendererAPI.cpp
+  RendererAPI_D3D11.cpp
+     Creating library C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\ARM\Release\AsyncTextureLoader-UWP\AsyncTextureLoader.lib and object C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\ARM\Release\AsyncTextureLoader-UWP\AsyncTextureLoader.exp
+  Generating code
+  Finished generating code
+  AsyncTextureLoader-UWP.vcxproj -> C:\Users\nemqu\Documents\GitHub\AsyncTextureReader\PluginSource\Projects\VS2017\ARM\Release\AsyncTextureLoader-UWP\AsyncTextureLoader.dll
