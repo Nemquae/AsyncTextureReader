@@ -1,4 +1,6 @@
 # Introduction 
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FNemquae%2FAsyncTextureReader.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FNemquae%2FAsyncTextureReader?ref=badge_shield)
+
 Native Unity plugin that lets you asynchronously copy textures and buffers from gpu memory to managed system memory.
 
 # Warning
@@ -70,3 +72,7 @@ List of functions and what they should do. Only texture related function are lis
 - `RequestTextureData_RenderThread` - Request on render thread. This is where the texture copy takes place.
 - `CopyTextureData_RenderThread` - Called on render thread everytime user code calls `AsyncTextureReader.RetrieveTextureData`. DX version checks if texture copy is finished, it then copies texture data to a buffer that is accessible from main thread and flags texture copy as finished.
 - `RetrieveTextureData_MainThread` -  Called on main thread when user code calls `AsyncTextureReader.RetrieveTextureData`. It should copies texture data to managed buffer supplied by user code if texture copy is finished on render thread.
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FNemquae%2FAsyncTextureReader.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FNemquae%2FAsyncTextureReader?ref=badge_large)
